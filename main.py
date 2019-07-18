@@ -341,6 +341,7 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
             train_batches = training_batch(model, sess, batches, args.adver)
             train_time = time() - train_begin
 
+            global ndcg, cur_res
             if epoch_count % args.verbose == 0:
                 _, ndcg, cur_res = output_evaluate(model, sess, dataset, train_batches, eval_feed_dicts,
                                                    epoch_count, batch_time, train_time, prev_acc, output_adv=0)
