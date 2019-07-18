@@ -65,8 +65,8 @@ def parse_args():
                         help='Generate the adversarial sample by gradient method or random method')
     parser.add_argument('--eps', type=float, default=0.5,
                         help='Epsilon for adversarial weights.')
-    parser.add_argument('-beta', nargs='+', dest="beta_list", type=float, default=[1.], metavar="FLOAT",
-                        help="share of unobserved within negative feedback")
+    parser.add_argument('--beta', type=float, default=0.8,
+                        help='share of unobserved within negative feedback')
     return parser.parse_args()
 
 def get_channels(inter_df):
@@ -111,16 +111,15 @@ def shuffle(samples, batch_size, dataset, model):
 
     _user_input, _item_input_pos = samples
     _batch_size = batch_size
-    _index = range(len(_user_input))
+    _index = list(range(len(_user_input)))
     _model = model
     _dataset = dataset
 
     channels = get_channels(_dataset.train_ratings)
     train_inter_pos, train_inter_neg = get_pos_neg_splits(_dataset.train_ratings)
-    pos_level_dist, neg_level_dist = get_overall_level_distributions(train_inter_pos,
-                                    train_inter_neg)
+    pos_level_dist, neg_level_dist = get_overall_level_distributions(train_inter_pos, train_inter_neg, args.beta)
     train_inter_pos_dict = get_pos_channel_item_dict(train_inter_pos)  
-    user_reps = get_user_reps(n_user, args.embed_size, _dataset.train_ratings, 
+    user_reps = get_user_reps(_dataset.m, args.embed_size, _dataset.train_ratings, 
                               _dataset.test_ratings, channels, args.beta)  
 
     np.random.shuffle(_index)
@@ -143,13 +142,13 @@ def _get_train_batch(i):
     for idx in range(begin, begin + _batch_size):
         L = get_pos_channel(pos_level_dist)
         u, i = get_pos_user_item(L, train_inter_pos_dict)
-        N = get_neg_channel(user_reps[u])
-        j = get_neg_item(user_reps[u], N, _dataset.n, u, i,
-                         pos_level_dist, train_inter_pos_dict)
+        # N = get_neg_channel(user_reps[u])
+        # j = get_neg_item(user_reps[u], N, _dataset.n, u, i,
+        #                  pos_level_dist, train_inter_pos_dict)
 
         user_batch.append(u)
         item_batch.append(i)
-        item_batch.append(j)
+        # item_batch.append(j)
         # user_batch.append(_user_input[_index[idx]])
         # item_batch.append(_item_input_pos[_index[idx]])
         for dns in range(_model.dns):
@@ -313,7 +312,7 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
         # initialize the weights
         else:
             logging.info("Initialized from scratch")
-            print "Initialized from scratch"
+            print("Initialized from scratch")
 
         # initialize for Evaluate
         eval_feed_dicts = init_eval_model(model, dataset)
@@ -353,10 +352,10 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
                 best_res['epoch'] = epoch_count
 
             if model.epochs == epoch_count:
-                print "Epoch %d is the best epoch" % best_res['epoch']
+                print("Epoch %d is the best epoch" % best_res['epoch'])
                 for idx, (hr_k, ndcg_k, auc_k) in enumerate(np.swapaxes(best_res['result'], 0, 1)):
                     res = "K = %d: HR = %.4f, NDCG = %.4f AUC = %.4f" % (idx + 1, hr_k, ndcg_k, auc_k)
-                    print res
+                    print(res)
 
             # save the embedding weights
             if args.ckpt > 0 and epoch_count % args.ckpt == 0:
@@ -383,7 +382,7 @@ def output_evaluate(model, sess, dataset, train_batches, eval_feed_dicts, epoch_
           (epoch_count, batch_time, train_time, hr, ndcg, prev_acc,
            post_acc, eval_time, np.linalg.norm(embedding_P), np.linalg.norm(embedding_Q))
 
-    print res
+    print(res)
 
     return post_acc, ndcg, result
 
@@ -542,7 +541,7 @@ def init_logging(args, time_stamp):
     logging.basicConfig(filename=path + "%s_log_embed_size%d_%s" % (args.dataset, args.embed_size, time_stamp),
                         level=logging.INFO)
     logging.info(args)
-    print args
+    print(args)
 
 
 if __name__ == '__main__':
@@ -561,7 +560,7 @@ if __name__ == '__main__':
     MF_BPR = MF(dataset.num_users, dataset.num_items, args)
     MF_BPR.build_graph()
 
-    print "Initialize MF_BPR"
+    print("Initialize MF_BPR")
 
     # start training
     training(MF_BPR, dataset, args, epoch_start=0, epoch_end=args.adv_epoch-1, time_stamp=time_stamp)
@@ -571,7 +570,7 @@ if __name__ == '__main__':
     AMF = MF(dataset.num_users, dataset.num_items, args)
     AMF.build_graph()
 
-    print "Initialize AMF"
+    print("Initialize AMF")
 
     # start training
     training(AMF, dataset, args, epoch_start=args.adv_epoch, epoch_end=args.epochs, time_stamp=time_stamp)

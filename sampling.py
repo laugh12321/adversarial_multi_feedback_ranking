@@ -13,16 +13,7 @@ def get_pos_channel(pos_level_dist):
     levels = list(pos_level_dist.keys())
     probabilities = list(pos_level_dist.values())
     L = np.random.choice(levels, p=probabilities)
-    '''
-    numpy.random.choice(a, size=None, replace=True, p=None)
-    Ex: 从 a 中产生一个大小为 size 的有重复替换的，概率为 p 的随机采样
-
-    - a 如果为 ndarray 数组，随机样本在该数组获取数据元素，
-        如果是整形数据，则随机样本生成类似 np.arange(n)    
-    - size 随机样本大小
-    - replace 采样样本是否含有重复值
-    - p 为 a 中元素的出现概率，默认 a 中元素等概率出现
-    '''
+    
     return L
 
 

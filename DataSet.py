@@ -80,7 +80,7 @@ class Dataset(object):
                 if (rating > 0):
                     mat[user, item] = 1.0
                 line = f.readline()
-        print "already load the trainMatrix..."
+        print("already load the trainMatrix...")
         return mat
 
     def load_training_file_as_list(self, filename):
@@ -103,7 +103,7 @@ class Dataset(object):
                 items.append(i)
                 line = f.readline()
         lists.append(items)
-        print "already load the trainList..."
+        print("already load the trainList...")
         return lists
 
     def load_ratings(self, filename):
@@ -119,8 +119,7 @@ class Dataset(object):
             m (int): no. of unique users in the dataset
             n (int): no. of unique items in the dataset
         """
-        ratings = pd.read_csv(filename, sep='::', header=0,
-                            names=['user', 'item', 'rating', 'timestamp'])
+        ratings = pd.read_csv(filename, sep='	', names=['user', 'item', 'rating', 'timestamp'])
         ratings.drop('timestamp', axis=1, inplace=True)
 
         m = ratings['user'].unique().shape[0]

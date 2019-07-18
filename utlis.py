@@ -1,3 +1,4 @@
+import numpy as np
 from collections import OrderedDict 
 
 def get_pos_level_dist(weights, level_counts):
@@ -19,6 +20,7 @@ def get_pos_level_dist(weights, level_counts):
     """
     # if mode == 'non-uniform':
     nominators = weights * level_counts
+    nominators = nominators.astype(np.float64)
     denominator = sum(nominators)
     dist = nominators / denominator
     # else:
@@ -30,7 +32,7 @@ def get_pos_level_dist(weights, level_counts):
     return dist
 
 
-def get_neg_level_dist(weights, level_counts):
+def get_neg_level_dist(weights, level_counts, mode='non-uniform'):
     """
     Compute negative feedback channel distribution
 
@@ -46,23 +48,24 @@ def get_neg_level_dist(weights, level_counts):
     Returns:
         dist (dict): negative channel sampling distribution
     """
-    #if mode == 'non-uniform':
-    nominators = [weight * count for weight, count in zip(weights, level_counts)]
-    denominator = sum(nominators)
-    if denominator != 0:
-        dist = list(nom / denominator for nom in nominators)
+    if mode == 'non-uniform':
+        nominators = [weight * count * 1.0 for weight, count in zip(weights, level_counts)]
+        denominator = sum(nominators)
+        if denominator != 0:
+            dist = list(nom / denominator for nom in nominators)
+        else:
+            dist = [0.0] * len(nominators)
     else:
-        dist = [0] * len(nominators)
-    # else:
-    #     n_levels = len(weights)
-    #     dist = [1 / n_levels] * n_levels
+        n_levels = len(weights)
+        dist = [1.0 / n_levels] * n_levels
 
     if np.abs(np.sum(dist)-1) > 0.00001:
+        print(np.abs(np.sum(dist)-1))
         print("Dist sum unequal 1.")
 
     dist = dict(zip(list(weights), dist))
 
-    return dist     
+    return dist 
 
 def get_pos_neg_splits(train_inter_df):
     """
@@ -118,7 +121,7 @@ def get_overall_level_distributions(train_inter_pos, train_inter_neg, beta):
     pos_level_dist = get_pos_level_dist(pos_counts.index.values,
                                         pos_counts.values)
     neg_level_dist = get_neg_level_dist(neg_counts.index.values,
-                                        neg_counts.values)
+                                        neg_counts.values, beta)
 
     return pos_level_dist, neg_level_dist
 
@@ -139,10 +142,10 @@ def get_pos_channel_item_dict(train_inter_pos):
 
     pos_counts = train_inter_pos['rating'].value_counts().sort_index(
         ascending=False)
-    train_inter_pos_dict = OrderedDict() # 见 Ex - 01
+    train_inter_pos_dict = OrderedDict() 
 
     for key in pos_counts.index.values:
-        u_i_tuples = [tuple(x) for x in  # tuple() 将列表转换为元组
+        u_i_tuples = [tuple(x) for x in 
                       train_inter_pos[train_inter_pos['rating'] == key][['user', 'item']].values]
         train_inter_pos_dict[key] = u_i_tuples
 
@@ -199,7 +202,7 @@ def get_user_reps(m, d, train_inter, test_inter, channels, beta):
 
         if sum(neg_channel_counts) != 0:
             user_reps[user_id]['neg_channel_dist'] = \
-                get_neg_level_dist(neg_channels, neg_channel_counts)
+                get_neg_level_dist(neg_channels, neg_channel_counts, 'non-uniform')
 
             # correct for beta
             for key in user_reps[user_id]['neg_channel_dist'].keys():
