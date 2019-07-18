@@ -1,103 +1,135 @@
+'''
+Created on Aug 8, 2016
+Processing datasets. 
+@author: Xiangnan He (xiangnanhe@gmail.com)
+'''
+import scipy.sparse as sp
 import pandas as pd
-from collections import OrderedDict  # Ex - 01: 使字典对象有序
-from sampling import (get_pos_level_dist, get_neg_level_dist)
+import numpy as np
+from time import time
 
-class DataSet(object):
+class Dataset(object):
+    '''
+    Loading the data file
+        trainMatrix: load rating records as sparse matrix for class Data
+        trianList: load rating records as list to speed up user's feature retrieval
+        testRatings: load leave-one-out rating test for class Evaluate
+        testNegatives: sample the items not rated by user
+    '''
 
-    def __init__(self, path, beta):
-        self.beta = beta
-        self.train_inter_df = self.load_rating_file_as_df(path + '.train.rating')
-        self.test_inter_df = self.load_rating_file_as_df(path + '.test.rating')
-        self.train_inter_pos, self. train_inter_neg = self.get_pos_neg_splits(self.train_inter_df)
-        self.pos_level_dist, self.neg_level_dist = self.get_overall_level_distributions(self.train_inter_pos,
-                                                                             self.train_inter_neg, self.beta)
-        self.train_inter_pos_dict = self.get_pos_channel_item_dict(self.train_inter_pos)                                                        
+    def __init__(self, path):
+        '''
+        Constructor
+        '''
+        self.trainMatrix = self.load_training_file_as_matrix(path + ".train.rating")
+        self.trainList = self.load_training_file_as_list(path + ".train.rating")
+        self.testRatings = self.load_rating_file_as_list(path + ".test.rating")
+        self.testNegatives = self.load_negative_file(path + ".test.negative")
+        assert len(self.testRatings) == len(self.testNegatives)
+        self.num_users, self.num_items = self.trainMatrix.shape
 
-    def load_rating_file_as_df(self, filename):
-        names = ['user', 'item', 'rating', 'timestamp']  
-        rating_inter_df = pd.read_csv('filename', sep='	', header=None, names=names)  
-        return rating_inter_df
+        self.train_ratings, self.m, self.n = self.load_ratings(path + ".train.rating")
+        self.test_ratings, _, _ = self.load_ratings(path + ".test.rating")
 
-    def get_pos_neg_splits(self, train_inter_df):
+    def load_rating_file_as_list(self, filename):
+        ratingList = []
+        with open(filename, "r") as f:
+            line = f.readline()
+            while line != None and line != "":
+                arr = line.split("\t")
+                user, item = int(arr[0]), int(arr[1])
+                ratingList.append([user, item])
+                line = f.readline()
+        return ratingList
+
+    def load_negative_file(self, filename):
+        negativeList = []
+        with open(filename, "r") as f:
+            line = f.readline()
+            while line != None and line != "":
+                arr = line.split("\t")
+                negatives = []
+                for x in arr[1: ]:
+                    negatives.append(int(x))
+                negativeList.append(negatives)
+                line = f.readline()
+        return negativeList
+
+    def load_training_file_as_matrix(self, filename):
+        '''
+        Read .rating file and Return dok matrix.
+        The first line of .rating file is: num_users\t num_items
+        '''
+        # Get number of users and items
+        num_users, num_items = 0, 0
+        with open(filename, "r") as f:
+            line = f.readline()
+            while line != None and line != "":
+                arr = line.split("\t")
+                u, i = int(arr[0]), int(arr[1])
+                num_users = max(num_users, u)
+                num_items = max(num_items, i)
+                line = f.readline()
+        # Construct matrix
+        mat = sp.dok_matrix((num_users+1, num_items+1), dtype=np.float32)
+        with open(filename, "r") as f:
+            line = f.readline()
+            while line != None and line != "":
+                arr = line.split("\t")
+                user, item, rating = int(arr[0]), int(arr[1]), float(arr[2])
+                if (rating > 0):
+                    mat[user, item] = 1.0
+                line = f.readline()
+        print "already load the trainMatrix..."
+        return mat
+
+    def load_training_file_as_list(self, filename):
+        # Get number of users and items
+        u_ = 0
+        lists, items = [], []
+        with open(filename, "r") as f:
+            line = f.readline()
+            index = 0
+            while line != None and line != "":
+                arr = line.split("\t")
+                u, i = int(arr[0]), int(arr[1])
+                if u_ < u:
+                    index = 0
+                    lists.append(items)
+                    items = []
+                    u_ += 1
+                index += 1
+                #if index<300:
+                items.append(i)
+                line = f.readline()
+        lists.append(items)
+        print "already load the trainList..."
+        return lists
+
+    def load_ratings(self, filename):
         """
-        Calculates the rating mean for each user and splits the train
-        ratings into positive (greater or equal as every user's
-        mean rating) and negative ratings (smaller as mean ratings)
+        loads the dataset, ignoring temporal information
 
         Args:
-            train_inter_df (:obj:`pd.DataFrame`): `M` training instances (rows)
+            path (str): path pointing to folder with interaction data `ratings.dat`
+
+        Returns:
+            ratings (:obj:`pd.DataFrame`): overall interaction instances (rows)
                 with three columns `[user, item, rating]`
-
-        Returns:
-            train_inter_pos (:obj:`pd.DataFrame`): training instances (rows)
-                where `rating_{user}` >= `mean_rating_{user}
-            train_inter_neg (:obj:`pd.DataFrame`): training instances (rows)
-                where `rating_{user}` < `mean_rating_{user}
+            m (int): no. of unique users in the dataset
+            n (int): no. of unique items in the dataset
         """
-        user_mean_ratings = \
-            train_inter_df[['user', 'rating']].groupby('user').mean().reset_index()
-        user_mean_ratings.rename(columns={'rating': 'mean_rating'},
-                                inplace=True)
+        ratings = pd.read_csv(filename, sep='::', header=0,
+                            names=['user', 'item', 'rating', 'timestamp'])
+        ratings.drop('timestamp', axis=1, inplace=True)
 
-        train_inter_df = train_inter_df.merge(user_mean_ratings, on='user')
-        train_inter_pos = train_inter_df[
-            train_inter_df['rating'] >= train_inter_df['mean_rating']]
-        train_inter_neg = train_inter_df[
-            train_inter_df['rating'] < train_inter_df['mean_rating']]
+        m = ratings['user'].unique().shape[0]
+        n = ratings['item'].unique().shape[0]
 
-        return train_inter_pos, train_inter_neg
+        # Contiguation of user and item IDs
+        user_rehasher = dict(zip(ratings['user'].unique(), np.arange(m)))
+        item_rehasher = dict(zip(ratings['item'].unique(), np.arange(n)))
+        ratings['user'] = ratings['user'].map(user_rehasher).astype(int)
+        ratings['item'] = ratings['item'].map(item_rehasher)
 
-    def get_overall_level_distributions(self, train_inter_pos, train_inter_neg, beta):
-        """
-        Computes the frequency distributions for discrete ratings
-
-        Args:
-            train_inter_pos (:obj:`pd.DataFrame`): training instances (rows)
-                where `rating_{user}` >= `mean_rating_{user}
-            train_inter_neg (:obj:`pd.DataFrame`): training instances (rows)
-                where `rating_{user}` < `mean_rating_{user}
-            beta (float): share of unobserved feedback within the overall
-                negative feedback
-
-        Returns:
-            pos_level_dist (dict): positive level sampling distribution
-            neg_level_dist (dict): negative level sampling distribution
-        """
-
-        pos_counts = train_inter_pos['rating'].value_counts().sort_index(
-                ascending=False)
-        neg_counts = train_inter_neg['rating'].value_counts().sort_index(
-                ascending=False)
-
-        pos_level_dist = get_pos_level_dist(pos_counts.index.values,
-                                            pos_counts.values)
-        neg_level_dist = get_neg_level_dist(neg_counts.index.values,
-                                            neg_counts.values, beta)
-
-        return pos_level_dist, neg_level_dist
-
-    def get_pos_channel_item_dict(self, train_inter_pos):
-        """
-        Creates buckets for each possible rating in `train_inter_pos`
-        and subsumes all observed (user, item) interactions with
-        the respective rating within
-
-        Args:
-            train_inter_pos (:obj:`pd.DataFrame`): training instances (rows)
-                where `rating_{user}` >= `mean_rating_{user}
-
-        Returns:
-            train_inter_pos_dict (dict): collection of all (user, item) interaction
-                tuples for each positive feedback channel
-        """
-
-        pos_counts = train_inter_pos['rating'].value_counts().sort_index(
-            ascending=False)
-        train_inter_pos_dict = OrderedDict() # 见 Ex - 01
-
-        for key in pos_counts.index.values:
-            u_i_tuples = [tuple(x) for x in  # tuple() 将列表转换为元组
-                        train_inter_pos[train_inter_pos['rating'] == key][['user', 'item']].values]
-            train_inter_pos_dict[key] = u_i_tuples
-
-        return train_inter_pos_dict
+        return ratings, m, n

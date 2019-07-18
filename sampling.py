@@ -63,8 +63,7 @@ def get_neg_channel(user_rep):
     return N
 
 
-def get_neg_item(user_rep, N, n, u, i, pos_level_dist, train_inter_pos_dict,
-                 mode='uniform'):
+def get_neg_item(user_rep, N, n, u, i, pos_level_dist, train_inter_pos_dict):
     """
     Samples the negative item `j` to complete the update triplet `(u, i, j)
 
@@ -95,92 +94,29 @@ def get_neg_item(user_rep, N, n, u, i, pos_level_dist, train_inter_pos_dict,
         j = np.random.choice(neg_items)
 
     else:
-        if mode == 'uniform':
-            # sample item uniformly from unobserved channel
-            j = np.random.choice(np.setdiff1d(np.arange(n), user_rep['items']))
+        # if mode == 'uniform':
+        #     # sample item uniformly from unobserved channel
+        #     j = np.random.choice(np.setdiff1d(np.arange(n), user_rep['items']))
 
-        elif mode == 'non-uniform':
-            # sample item non-uniformly from unobserved channel
-            L = get_pos_channel(pos_level_dist)
+        # elif mode == 'non-uniform':
+        # sample item non-uniformly from unobserved channel
+        L = get_pos_channel(pos_level_dist)
+        pos_channel_interactions = train_inter_pos_dict[L]
+        n_pos_interactions = len(pos_channel_interactions)
+        pick_trials = 0  # ensure sampling despite
+        u_other, i_other = u, i
+        while u == u_other or i == i_other:
             pos_channel_interactions = train_inter_pos_dict[L]
-            n_pos_interactions = len(pos_channel_interactions)
-            pick_trials = 0  # ensure sampling despite
-            u_other, i_other = u, i
-            while u == u_other or i == i_other:
+            pick_idx = np.random.randint(n_pos_interactions)
+            u_other, i_other = pos_channel_interactions[pick_idx]
+            pick_trials += 1
+            if pick_trials == 10:
+                # Ensures that while-loop terminates if sampled L does
+                # not provide properly different feedback
+                L = get_pos_channel(pos_level_dist)
                 pos_channel_interactions = train_inter_pos_dict[L]
-                pick_idx = np.random.randint(n_pos_interactions)
-                u_other, i_other = pos_channel_interactions[pick_idx]
-                pick_trials += 1
-                if pick_trials == 10:
-                    # Ensures that while-loop terminates if sampled L does
-                    # not provide properly different feedback
-                    L = get_pos_channel(pos_level_dist)
-                    pos_channel_interactions = train_inter_pos_dict[L]
-                    n_pos_interactions = len(pos_channel_interactions)
+                n_pos_interactions = len(pos_channel_interactions)
 
-            j = i_other
+        j = i_other
 
     return j
-    
-def get_pos_level_dist(weights, level_counts, mode='non-uniform'):
-    """
-    Returns the sampling distribution for positive
-    feedback channels L using either a `non-uniform` or `uniform` approach
-
-    Args:
-        weights (:obj:`np.array`): (w, ) `w` rating values representing distinct
-            positive feedback channels
-        level_counts (:obj:`np.array`): (s, ) count `s` of ratings for each
-            positive feedback channel
-        mode (str): either `uniform` meaning all positive levels are
-            equally relevant or `non-uniform` which imposes
-            a (rating*count)-weighted distribution of positive levels
-
-    Returns:
-        dist (dict): positive channel sampling distribution
-    """
-    if mode == 'non-uniform':
-        nominators = weights * level_counts
-        denominator = sum(nominators)
-        dist = nominators / denominator
-    else:
-        n_levels = len(weights)
-        dist = np.ones(n_levels) / n_levels
-
-    dist = dict(zip(list(weights), dist))
-
-    return dist
-
-def get_neg_level_dist(weights, level_counts, mode='non-uniform'):
-    """
-    Compute negative feedback channel distribution
-
-    Args:
-        weights (:obj:`np.array`): (w, ) `w` rating values representing distinct
-            negative feedback channels
-        level_counts (:obj:`np.array`): (s, ) count `s` of ratings for each
-            negative feedback channel
-        mode: either `uniform` meaning all negative levels are
-            equally relevant or `non-uniform` which imposes
-            a (rating*count)-weighted distribution of negative levels
-
-    Returns:
-        dist (dict): negative channel sampling distribution
-    """
-    if mode == 'non-uniform':
-        nominators = [weight * count for weight, count in zip(weights, level_counts)]
-        denominator = sum(nominators)
-        if denominator != 0:
-            dist = list(nom / denominator for nom in nominators)
-        else:
-            dist = [0] * len(nominators)
-    else:
-        n_levels = len(weights)
-        dist = [1 / n_levels] * n_levels
-
-    if np.abs(np.sum(dist)-1) > 0.00001:
-        print("Dist sum unequal 1.")
-
-    dist = dict(zip(list(weights), dist))
-
-    return dist
