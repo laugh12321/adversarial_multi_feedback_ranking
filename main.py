@@ -1,21 +1,27 @@
+'''
+Created on July 18, 2019
+Multi Channel Adversarial Personalized Ranking
+@author: zhangpeng bo (zhang26162@gmail.com)
+'''
 from __future__ import absolute_import
 from __future__ import division
 import os
 import math
+import logging
+import argparse
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from multiprocessing import Pool
 from multiprocessing import cpu_count
-import argparse
-import logging
+
 from time import time
 from time import strftime
 from time import localtime
-from Dataset import Dataset
+
 from utlis import *
-from sampling import (get_pos_channel, get_neg_channel,
-                       get_pos_user_item, get_neg_item)
+from sampling import *
+from Dataset import Dataset
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 _user_input = None
@@ -67,22 +73,9 @@ def parse_args():
                         help='Epsilon for adversarial weights.')
     parser.add_argument('--beta', type=float, default=0.8,
                         help='share of unobserved within negative feedback')
+    parser.add_argument('-sampling', nargs='+', dest="neg_sampling_modes", type=str, default='non-uniform', metavar="STR",
+                        help="list of negative item sampling modes")
     return parser.parse_args()
-
-def get_channels(inter_df):
-    """
-    Return existing feedback channels ordered by descending preference level
-
-    Args:
-        inter_df (:obj:`pd.DataFrame`): overall interaction instances (rows)
-            with three columns `[user, item, rating]`
-    Returns:
-        channels ([int]): rating values representing distinct feedback channels
-    """
-    channels = list(inter_df['rating'].unique())
-    channels.sort()
-
-    return channels[::-1]
 
 # data sampling and shuffling
 
@@ -119,7 +112,7 @@ def shuffle(samples, batch_size, dataset, model):
     train_inter_pos, train_inter_neg = get_pos_neg_splits(_dataset.train_ratings)
     pos_level_dist, neg_level_dist = get_overall_level_distributions(train_inter_pos, train_inter_neg, args.beta)
     train_inter_pos_dict = get_pos_channel_item_dict(train_inter_pos)  
-    user_reps = get_user_reps(_dataset.m, args.embed_size, _dataset.train_ratings, 
+    user_reps = get_user_reps(_dataset.num_users, args.embed_size, _dataset.train_ratings, 
                               _dataset.test_ratings, channels, args.beta)  
 
     np.random.shuffle(_index)
@@ -142,23 +135,17 @@ def _get_train_batch(i):
     for idx in range(begin, begin + _batch_size):
         L = get_pos_channel(pos_level_dist)
         u, i = get_pos_user_item(L, train_inter_pos_dict)
-        # N = get_neg_channel(user_reps[u])
-        # j = get_neg_item(user_reps[u], N, _dataset.n, u, i,
-        #                  pos_level_dist, train_inter_pos_dict)
-
         user_batch.append(u)
         item_batch.append(i)
-        # item_batch.append(j)
-        # user_batch.append(_user_input[_index[idx]])
-        # item_batch.append(_item_input_pos[_index[idx]])
+
         for dns in range(_model.dns):
             user = _user_input[_index[idx]]
             user_neg_batch.append(user)
             # negtive k
-            gtItem = _dataset.testRatings[user][1]
-            j = np.random.randint(_dataset.num_items)
-            while j in _dataset.trainList[_user_input[_index[idx]]]:
-                j = np.random.randint(_dataset.num_items)
+            N = get_neg_channel(user_reps[u])
+            j = get_neg_item(user_reps[u], N, _dataset.num_items, u, i,
+                             pos_level_dist, train_inter_pos_dict, 
+                             args.neg_sampling_modes)
             item_neg_batch.append(j)
     return np.array(user_batch)[:, None], np.array(item_batch)[:, None], \
            np.array(user_neg_batch)[:, None], np.array(item_neg_batch)[:, None]
@@ -285,17 +272,29 @@ class MF:
 
 # training
 def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver is an object to save pq
+    global result_save_path
+
+    index_best = 'Epoch, K, HR, NDCG, AUC\n'
+    index = 'Epochs, Time, HR, NDCG, ACC, ACC_adv, Eval_time, P, Q\n'
+
     with tf.Session() as sess:
         # initialized the save op
         if args.adver:
+            result_save_path = "Result/%s/APR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
             ckpt_save_path = "Pretrain/%s/APR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
             ckpt_restore_path = "Pretrain/%s/MF_BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
         else:
+            result_save_path = "Result/%s/MF_BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
             ckpt_save_path = "Pretrain/%s/MF_BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
             ckpt_restore_path = 0 if args.restore is None else "Pretrain/%s/MF_BPR/embed_%d/%s/" % (args.dataset, args.embed_size, args.restore)
 
         if not os.path.exists(ckpt_save_path):
             os.makedirs(ckpt_save_path)
+            os.makedirs(result_save_path)
+
+            file = open(result_save_path + 'result.csv', 'a+')
+            file.write(index)
+            file.close()
         if ckpt_restore_path and not os.path.exists(ckpt_restore_path):
             os.makedirs(ckpt_restore_path)
 
@@ -325,6 +324,7 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
         best_res = {}
 
         # train by epoch
+        global ndcg, cur_res
         for epoch_count in range(epoch_start, epoch_end+1):
 
             # initialize for training batches
@@ -341,7 +341,6 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
             train_batches = training_batch(model, sess, batches, args.adver)
             train_time = time() - train_begin
 
-            global ndcg, cur_res
             if epoch_count % args.verbose == 0:
                 _, ndcg, cur_res = output_evaluate(model, sess, dataset, train_batches, eval_feed_dicts,
                                                    epoch_count, batch_time, train_time, prev_acc, output_adv=0)
@@ -354,9 +353,14 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
 
             if model.epochs == epoch_count:
                 print("Epoch %d is the best epoch" % best_res['epoch'])
+                ffile = open(result_save_path + 'result.csv', 'a+')
+                file.write("Epoch %d is the best epoch\n" % best_res['epoch'])
+                file.write(index_best)
                 for idx, (hr_k, ndcg_k, auc_k) in enumerate(np.swapaxes(best_res['result'], 0, 1)):
                     res = "K = %d: HR = %.4f, NDCG = %.4f AUC = %.4f" % (idx + 1, hr_k, ndcg_k, auc_k)
+                    file.write("%d, %.4f, %.4f, %.4f\n" % (idx + 1, hr_k, ndcg_k, auc_k))
                     print(res)
+                file.close()
 
             # save the embedding weights
             if args.ckpt > 0 and epoch_count % args.ckpt == 0:
@@ -382,7 +386,11 @@ def output_evaluate(model, sess, dataset, train_batches, eval_feed_dicts, epoch_
     res = "Epoch %d [%.1fs + %.1fs]: HR = %.4f, NDCG = %.4f ACC = %.4f ACC_adv = %.4f [%.1fs], |P|=%.2f, |Q|=%.2f" % \
           (epoch_count, batch_time, train_time, hr, ndcg, prev_acc,
            post_acc, eval_time, np.linalg.norm(embedding_P), np.linalg.norm(embedding_Q))
-
+    file = open(result_save_path + 'result.csv', 'a+')
+    file.write("%d, %.1fs + %.1fs, %.4f, %.4f, %.4f, %.4f, %.1fs, %.2f, %.2f\n" % \
+          (epoch_count, batch_time, train_time, hr, ndcg, prev_acc,
+           post_acc, eval_time, np.linalg.norm(embedding_P), np.linalg.norm(embedding_Q)))
+    file.close()
     print(res)
 
     return post_acc, ndcg, result

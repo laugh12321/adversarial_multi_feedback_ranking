@@ -1,7 +1,18 @@
+'''
+Created on July 18, 2019
+Utils. 
+@author: zhangpeng bo (zhang26162@gmail.com)
+'''
 import numpy as np
 from collections import OrderedDict 
 
-def get_pos_level_dist(weights, level_counts):
+def get_channels(inter_df):
+    channels = list(inter_df['rating'].unique())
+    channels.sort()
+
+    return channels[::-1]
+
+def get_pos_level_dist(weights, level_counts, mode='non-uniform'):
     """
     Returns the sampling distribution for positive
     feedback channels L using either a `non-uniform` or `uniform` approach
@@ -18,21 +29,19 @@ def get_pos_level_dist(weights, level_counts):
     Returns:
         dist (dict): positive channel sampling distribution
     """
-    # if mode == 'non-uniform':
-    nominators = weights * level_counts
-    nominators = nominators.astype(np.float64)
-    denominator = sum(nominators)
-    dist = nominators / denominator
-    # else:
-    #     n_levels = len(weights)
-    #     dist = np.ones(n_levels) / n_levels
+    if mode == 'non-uniform':
+        nominators = weights * level_counts
+        denominator = sum(nominators)
+        dist = nominators / denominator
+    else:
+        n_levels = len(weights)
+        dist = np.ones(n_levels) / n_levels
 
     dist = dict(zip(list(weights), dist))
 
     return dist
 
-
-def get_neg_level_dist(weights, level_counts, mode='non-uniform'):
+def get_neg_level_dist(weights, level_counts, mode):
     """
     Compute negative feedback channel distribution
 
@@ -49,7 +58,7 @@ def get_neg_level_dist(weights, level_counts, mode='non-uniform'):
         dist (dict): negative channel sampling distribution
     """
     if mode == 'non-uniform':
-        nominators = [weight * count * 1.0 for weight, count in zip(weights, level_counts)]
+        nominators = [weight * count for weight, count in zip(weights, level_counts)]
         denominator = sum(nominators)
         if denominator != 0:
             dist = list(nom / denominator for nom in nominators)
@@ -57,10 +66,10 @@ def get_neg_level_dist(weights, level_counts, mode='non-uniform'):
             dist = [0.0] * len(nominators)
     else:
         n_levels = len(weights)
-        dist = [1.0 / n_levels] * n_levels
+        dist = [1 / n_levels] * n_levels
 
     if np.abs(np.sum(dist)-1) > 0.00001:
-        print(np.abs(np.sum(dist)-1))
+        logging.warning('Dist sum unequal 1.') 
         print("Dist sum unequal 1.")
 
     dist = dict(zip(list(weights), dist))
@@ -198,7 +207,7 @@ def get_user_reps(m, d, train_inter, test_inter, channels, beta):
         neg_channel_counts = [len(user_reps[user_id]['neg_channel_items'][key]) for key in neg_channels]
 
         user_reps[user_id]['pos_channel_dist'] = \
-            get_pos_level_dist(pos_channels, pos_channel_counts)
+            get_pos_level_dist(pos_channels, pos_channel_counts, 'non-uniform')
 
         if sum(neg_channel_counts) != 0:
             user_reps[user_id]['neg_channel_dist'] = \

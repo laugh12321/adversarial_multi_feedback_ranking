@@ -1,7 +1,7 @@
 '''
-Created on Aug 8, 2016
+Created on July 18, 2019
 Processing datasets. 
-@author: Xiangnan He (xiangnanhe@gmail.com)
+@author: zhangpeng bo (zhang26162@gmail.com)
 '''
 import scipy.sparse as sp
 import pandas as pd
@@ -28,8 +28,8 @@ class Dataset(object):
         assert len(self.testRatings) == len(self.testNegatives)
         self.num_users, self.num_items = self.trainMatrix.shape
 
-        self.train_ratings, self.m, self.n = self.load_ratings(path + ".train.rating")
-        self.test_ratings, _, _ = self.load_ratings(path + ".test.rating")
+        self.train_ratings = self.load_ratings(path + ".train.rating")
+        self.test_ratings = self.load_ratings(path + ".test.rating")
 
     def load_rating_file_as_list(self, filename):
         ratingList = []
@@ -121,14 +121,4 @@ class Dataset(object):
         """
         ratings = pd.read_csv(filename, sep='	', names=['user', 'item', 'rating', 'timestamp'])
         ratings.drop('timestamp', axis=1, inplace=True)
-
-        m = ratings['user'].unique().shape[0]
-        n = ratings['item'].unique().shape[0]
-
-        # Contiguation of user and item IDs
-        user_rehasher = dict(zip(ratings['user'].unique(), np.arange(m)))
-        item_rehasher = dict(zip(ratings['item'].unique(), np.arange(n)))
-        ratings['user'] = ratings['user'].map(user_rehasher).astype(int)
-        ratings['item'] = ratings['item'].map(item_rehasher)
-
-        return ratings, m, n
+        return ratings
