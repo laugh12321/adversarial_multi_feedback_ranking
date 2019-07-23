@@ -73,7 +73,7 @@ def parse_args():
                         help='Epsilon for adversarial weights.')
     parser.add_argument('--beta', type=float, default=0.8,
                         help='share of unobserved within negative feedback')
-    parser.add_argument('-sampling', nargs='+', dest="neg_sampling_modes", type=str, default='non-uniform', metavar="STR",
+    parser.add_argument('--sampling', dest="neg_sampling_modes", type=str, default='non-uniform',
                         help="list of negative item sampling modes")
     return parser.parse_args()
 
@@ -261,6 +261,8 @@ class MF:
     def _create_optimizer(self):
         with tf.name_scope("optimizer"):
             self.optimizer = tf.train.AdagradOptimizer(learning_rate=self.learning_rate).minimize(self.opt_loss)
+            #self.optimizer = tf.train.AdadeltaOptimizer(learning_rate=self.learning_rate).minimize(self.opt_loss)
+            #self.optimizer = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(self.opt_loss)
 
     def build_graph(self):
         self._create_placeholders()
