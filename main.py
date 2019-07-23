@@ -21,7 +21,7 @@ from time import localtime
 
 from utlis import *
 from sampling import *
-from Dataset import Dataset
+from DataSet import DataSet
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 _user_input = None
@@ -564,7 +564,7 @@ if __name__ == '__main__':
     init_logging(args, time_stamp)
 
     # initialize dataset
-    dataset = Dataset(args.path + args.dataset)
+    dataset = DataSet(args.path + args.dataset)
 
     args.adver = 0
     # initialize MF_BPR models
