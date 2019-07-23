@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 from time import time
 
-class Dataset(object):
+class DataSet(object):
     '''
     Loading the data file
         trainMatrix: load rating records as sparse matrix for class Data
