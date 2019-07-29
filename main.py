@@ -110,17 +110,24 @@ def shuffle(samples, batch_size, dataset, model):
 
     channels = get_channels(_dataset.train_ratings)
     train_inter_pos, train_inter_neg = get_pos_neg_splits(_dataset.train_ratings)
-    pos_level_dist, neg_level_dist = get_overall_level_distributions(train_inter_pos, train_inter_neg, args.beta)
+    pos_level_dist, _ = get_overall_level_distributions(train_inter_pos, train_inter_neg, args.neg_sampling_modes)
     train_inter_pos_dict = get_pos_channel_item_dict(train_inter_pos)  
     user_reps = get_user_reps(_dataset.num_users, args.embed_size, _dataset.train_ratings, 
                               _dataset.test_ratings, channels, args.beta)  
-
+    
     np.random.shuffle(_index)
     num_batch = len(_user_input) // _batch_size
+    
+    # res = []
+    # for i in range(num_batch):
+    #     temp = _get_train_batch(i)
+    #     res.append(temp)
+        
     pool = Pool(cpu_count())
     res = pool.map(_get_train_batch, range(num_batch))
     pool.close()
     pool.join()
+    
     user_list = [r[0] for r in res]
     item_pos_list = [r[1] for r in res]
     user_dns_list = [r[2] for r in res]
@@ -133,15 +140,26 @@ def _get_train_batch(i):
     user_neg_batch, item_neg_batch = [], []
     begin = i * _batch_size
     for idx in range(begin, begin + _batch_size):
+        # u = _user_input[_index[idx]]
+        # i = _item_input_pos[_index[idx]]
+        # user_batch.append(u)
+        # item_batch.append(i)
+        
         L = get_pos_channel(pos_level_dist)
         u, i = get_pos_user_item(L, train_inter_pos_dict)
         user_batch.append(u)
         item_batch.append(i)
 
         for dns in range(_model.dns):
-            user = _user_input[_index[idx]]
-            user_neg_batch.append(user)
+            user_neg_batch.append(u)
             # negtive k
+            
+            # gtItem = _dataset.testRatings[user][1]
+            # j = np.random.randint(_dataset.num_items)
+            # while j in _dataset.trainList[_user_input[_index[idx]]]:
+            #     j = np.random.randint(_dataset.num_items)
+            # item_neg_batch.append(j)
+            
             N = get_neg_channel(user_reps[u])
             j = get_neg_item(user_reps[u], N, _dataset.num_items, u, i,
                              pos_level_dist, train_inter_pos_dict, 
@@ -478,7 +496,12 @@ def init_eval_model(model, dataset):
     global _model
     _dataset = dataset
     _model = model
-
+    
+    # feed_dicts = []
+    # for user in range(_dataset.num_users):
+    #     temp = _evaluate_input(user)
+    #     feed_dicts.append(temp)
+        
     pool = Pool(cpu_count())
     feed_dicts = pool.map(_evaluate_input, range(_dataset.num_users))
     pool.close()
@@ -556,11 +579,9 @@ def init_logging(args, time_stamp):
 
 
 if __name__ == '__main__':
-
-    time_stamp = strftime('%Y_%m_%d_%H_%M_%S', localtime())
-
     # initilize arguments and logging
     args = parse_args()
+    time_stamp = strftime('%Y_%m_%d_%H_%M_%S', localtime()) if args.restore is None else args.restore
     init_logging(args, time_stamp)
 
     # initialize dataset
