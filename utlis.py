@@ -30,7 +30,7 @@ def get_pos_level_dist(weights, level_counts, mode='non-uniform'):
         dist (dict): positive channel sampling distribution
     """
     if mode == 'non-uniform':
-        nominators = weights * level_counts
+        nominators = (1.0 / weights) * level_counts
         denominator = sum(nominators)
         dist = nominators / denominator
     else:
@@ -58,7 +58,8 @@ def get_neg_level_dist(weights, level_counts, mode):
         dist (dict): negative channel sampling distribution
     """
     if mode == 'non-uniform':
-        nominators = [weight * count for weight, count in zip(weights, level_counts)]
+        nominators = (1.0 / weights) * level_counts
+        # nominators = [(1.0/weight) * count for weight, count in zip(weights, level_counts)]
         denominator = sum(nominators)
         if denominator != 0:
             dist = list(nom / denominator for nom in nominators)
@@ -105,7 +106,7 @@ def get_pos_neg_splits(train_inter_df):
 
     return train_inter_pos, train_inter_neg   
 
-def get_overall_level_distributions(train_inter_pos, train_inter_neg, beta):
+def get_overall_level_distributions(train_inter_pos, train_inter_neg, mode):
     """
     Computes the frequency distributions for discrete ratings
 
@@ -128,9 +129,9 @@ def get_overall_level_distributions(train_inter_pos, train_inter_neg, beta):
             ascending=False)
 
     pos_level_dist = get_pos_level_dist(pos_counts.index.values,
-                                        pos_counts.values)
+                                        pos_counts.values, mode)
     neg_level_dist = get_neg_level_dist(neg_counts.index.values,
-                                        neg_counts.values, beta)
+                                        neg_counts.values, mode)
 
     return pos_level_dist, neg_level_dist
 
