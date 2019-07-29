@@ -99,10 +99,12 @@ def get_neg_item(user_rep, N, n, u, i, pos_level_dist, train_inter_pos_dict,
             # sample item non-uniformly from unobserved channel
             L = get_pos_channel(pos_level_dist)
             pos_channel_interactions = train_inter_pos_dict[L]
+            _, user_rating_lsit = pos_channel_interactions      # Add to get u in rating L 's item list
             n_pos_interactions = len(pos_channel_interactions)
             pick_trials = 0  # ensure sampling despite
             u_other, i_other = u, i
-            while u == u_other or i == i_other:
+            # while u == u_other or i == i_other:
+            while u == u_other or (i_other in user_rating_lsit):
                 pos_channel_interactions = train_inter_pos_dict[L]
                 pick_idx = np.random.randint(n_pos_interactions)
                 u_other, i_other = pos_channel_interactions[pick_idx]
