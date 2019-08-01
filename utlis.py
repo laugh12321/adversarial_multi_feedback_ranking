@@ -106,7 +106,7 @@ def get_pos_neg_splits(train_inter_df):
 
     return train_inter_pos, train_inter_neg   
 
-def get_overall_level_distributions(train_inter_pos, train_inter_neg, mode):
+def get_overall_level_distributions(train_inter_pos, train_inter_neg, beta):
     """
     Computes the frequency distributions for discrete ratings
 
@@ -129,9 +129,9 @@ def get_overall_level_distributions(train_inter_pos, train_inter_neg, mode):
             ascending=False)
 
     pos_level_dist = get_pos_level_dist(pos_counts.index.values,
-                                        pos_counts.values, mode)
+                                        pos_counts.values)
     neg_level_dist = get_neg_level_dist(neg_counts.index.values,
-                                        neg_counts.values, mode)
+                                        neg_counts.values, beta)
 
     return pos_level_dist, neg_level_dist
 

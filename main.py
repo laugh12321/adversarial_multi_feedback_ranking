@@ -110,7 +110,7 @@ def shuffle(samples, batch_size, dataset, model):
 
     channels = get_channels(_dataset.train_ratings)
     train_inter_pos, train_inter_neg = get_pos_neg_splits(_dataset.train_ratings)
-    pos_level_dist, _ = get_overall_level_distributions(train_inter_pos, train_inter_neg, args.neg_sampling_modes)
+    pos_level_dist, _ = get_overall_level_distributions(train_inter_pos, train_inter_neg, args.beta)
     train_inter_pos_dict = get_pos_channel_item_dict(train_inter_pos)  
     user_reps = get_user_reps(_dataset.num_users, args.embed_size, _dataset.train_ratings, 
                               _dataset.test_ratings, channels, args.beta)  
@@ -118,15 +118,15 @@ def shuffle(samples, batch_size, dataset, model):
     np.random.shuffle(_index)
     num_batch = len(_user_input) // _batch_size
     
-    # res = []
-    # for i in range(num_batch):
-    #     temp = _get_train_batch(i)
-    #     res.append(temp)
+    res = []
+    for i in range(num_batch):
+        temp = _get_train_batch(i)
+        res.append(temp)
         
-    pool = Pool(cpu_count())
-    res = pool.map(_get_train_batch, range(num_batch))
-    pool.close()
-    pool.join()
+    # pool = Pool(cpu_count())
+    # res = pool.map(_get_train_batch, range(num_batch))
+    # pool.close()
+    # pool.join()
     
     user_list = [r[0] for r in res]
     item_pos_list = [r[1] for r in res]
@@ -345,6 +345,7 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
 
         # train by epoch
         global ndcg, cur_res
+        epoch_count = 0
         for epoch_count in range(epoch_start, epoch_end+1):
 
             # initialize for training batches
@@ -373,7 +374,7 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
 
             if model.epochs == epoch_count:
                 print("Epoch %d is the best epoch" % best_res['epoch'])
-                ffile = open(result_save_path + 'result.csv', 'a+')
+                file = open(result_save_path + 'result.csv', 'a+')
                 file.write("Epoch %d is the best epoch\n" % best_res['epoch'])
                 file.write(index_best)
                 for idx, (hr_k, ndcg_k, auc_k) in enumerate(np.swapaxes(best_res['result'], 0, 1)):
@@ -497,15 +498,15 @@ def init_eval_model(model, dataset):
     _dataset = dataset
     _model = model
     
-    # feed_dicts = []
-    # for user in range(_dataset.num_users):
-    #     temp = _evaluate_input(user)
-    #     feed_dicts.append(temp)
+    feed_dicts = []
+    for user in range(_dataset.num_users):
+        temp = _evaluate_input(user)
+        feed_dicts.append(temp)
         
-    pool = Pool(cpu_count())
-    feed_dicts = pool.map(_evaluate_input, range(_dataset.num_users))
-    pool.close()
-    pool.join()
+    # pool = Pool(cpu_count())
+    # feed_dicts = pool.map(_evaluate_input, range(_dataset.num_users))
+    # pool.close()
+    # pool.join()
 
     print("Load the evaluation model done [%.1f s]" % (time() - begin_time))
     return feed_dicts
