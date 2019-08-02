@@ -14,6 +14,7 @@ import pandas as pd
 import tensorflow as tf
 from multiprocessing import Pool
 from multiprocessing import cpu_count
+from sklearn.model_selection import KFold
 
 from time import time
 from time import strftime
@@ -21,7 +22,7 @@ from time import localtime
 
 from utlis import *
 from sampling import *
-from DataSet import DataSet
+from DataSet import DataSet, load_ratings
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 _user_input = None
@@ -108,12 +109,12 @@ def shuffle(samples, batch_size, dataset, model):
     _model = model
     _dataset = dataset
 
-    channels = get_channels(_dataset.train_ratings)
-    train_inter_pos, train_inter_neg = get_pos_neg_splits(_dataset.train_ratings)
+    channels = get_channels(_dataset.trainList)
+    train_inter_pos, train_inter_neg = get_pos_neg_splits(_dataset.trainList)
     pos_level_dist, _ = get_overall_level_distributions(train_inter_pos, train_inter_neg, args.beta)
     train_inter_pos_dict = get_pos_channel_item_dict(train_inter_pos)  
-    user_reps = get_user_reps(_dataset.num_users, args.embed_size, _dataset.train_ratings, 
-                              _dataset.test_ratings, channels, args.beta)  
+    user_reps = get_user_reps(_dataset.num_users, args.embed_size, _dataset.trainList, 
+                              _dataset.testRatings, channels, args.beta)  
     
     np.random.shuffle(_index)
     num_batch = len(_user_input) // _batch_size
@@ -307,10 +308,12 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
             result_save_path = "Result/%s/MF_BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
             ckpt_save_path = "Pretrain/%s/MF_BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
             ckpt_restore_path = 0 if args.restore is None else "Pretrain/%s/MF_BPR/embed_%d/%s/" % (args.dataset, args.embed_size, args.restore)
-
+        best_result_save_path = "Result/%s/Best/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
+        
         if not os.path.exists(ckpt_save_path):
             os.makedirs(ckpt_save_path)
             os.makedirs(result_save_path)
+            os.makedirs(best_result_save_path)
 
             file = open(result_save_path + 'result.csv', 'a+')
             file.write(index)
@@ -374,7 +377,7 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
 
             if model.epochs == epoch_count:
                 print("Epoch %d is the best epoch" % best_res['epoch'])
-                file = open(result_save_path + 'result.csv', 'a+')
+                file = open(best_result_save_path + 'result.txt', 'a+')
                 file.write("Epoch %d is the best epoch\n" % best_res['epoch'])
                 file.write(index_best)
                 for idx, (hr_k, ndcg_k, auc_k) in enumerate(np.swapaxes(best_res['result'], 0, 1)):
@@ -408,8 +411,8 @@ def output_evaluate(model, sess, dataset, train_batches, eval_feed_dicts, epoch_
           (epoch_count, batch_time, train_time, hr, ndcg, prev_acc,
            post_acc, eval_time, np.linalg.norm(embedding_P), np.linalg.norm(embedding_Q))
     file = open(result_save_path + 'result.csv', 'a+')
-    file.write("%d, %.1fs + %.1fs, %.4f, %.4f, %.4f, %.4f, %.1fs, %.2f, %.2f\n" % \
-          (epoch_count, batch_time, train_time, hr, ndcg, prev_acc,
+    file.write("%d, %.1fs, %.4f, %.4f, %.4f, %.4f, %.1fs, %.2f, %.2f\n" % \
+          (epoch_count, batch_time+train_time, hr, ndcg, prev_acc,
            post_acc, eval_time, np.linalg.norm(embedding_P), np.linalg.norm(embedding_Q)))
     file.close()
     print(res)
@@ -514,8 +517,8 @@ def init_eval_model(model, dataset):
 
 def _evaluate_input(user):
     # generate items_list
-    test_item = _dataset.testRatings[user][1]
-    item_input = set(range(_dataset.num_items)) - set(_dataset.trainList[user])
+    test_item = _dataset.testRatings['item'][user]
+    item_input = set(range(_dataset.num_items)) - set(_dataset.trainList[_dataset.trainList['user'] == user]['item'])
     if test_item in item_input:
         item_input.remove(test_item)
     item_input = list(item_input)
@@ -587,13 +590,13 @@ if __name__ == '__main__':
 
     # initialize dataset
     dataset = DataSet(args.path + args.dataset)
-
+    
     args.adver = 0
     # initialize MF_BPR models
     MF_BPR = MF(dataset.num_users, dataset.num_items, args)
     MF_BPR.build_graph()
 
-    print("Initialize MF_BPR")
+    print("Initialize MC_BPR")
 
     # start training
     training(MF_BPR, dataset, args, epoch_start=0, epoch_end=args.adv_epoch-1, time_stamp=time_stamp)
@@ -603,7 +606,7 @@ if __name__ == '__main__':
     AMF = MF(dataset.num_users, dataset.num_items, args)
     AMF.build_graph()
 
-    print("Initialize AMF")
+    print("Initialize MC_AMF")
 
     # start training
     training(AMF, dataset, args, epoch_start=args.adv_epoch, epoch_end=args.epochs, time_stamp=time_stamp)
