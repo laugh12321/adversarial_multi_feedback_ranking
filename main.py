@@ -14,7 +14,6 @@ import pandas as pd
 import tensorflow as tf
 from multiprocessing import Pool
 from multiprocessing import cpu_count
-from sklearn.model_selection import KFold
 
 from time import time
 from time import strftime
@@ -22,7 +21,7 @@ from time import localtime
 
 from utlis import *
 from sampling import *
-from DataSet import DataSet, load_ratings
+from DataSet import DataSet
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 _user_input = None
@@ -119,15 +118,15 @@ def shuffle(samples, batch_size, dataset, model):
     np.random.shuffle(_index)
     num_batch = len(_user_input) // _batch_size
     
-    res = []
-    for i in range(num_batch):
-        temp = _get_train_batch(i)
-        res.append(temp)
+#     res = []
+#     for i in range(num_batch):
+#         temp = _get_train_batch(i)
+#         res.append(temp)
         
-    # pool = Pool(cpu_count())
-    # res = pool.map(_get_train_batch, range(num_batch))
-    # pool.close()
-    # pool.join()
+    pool = Pool(cpu_count())
+    res = pool.map(_get_train_batch, range(num_batch))
+    pool.close()
+    pool.join()
     
     user_list = [r[0] for r in res]
     item_pos_list = [r[1] for r in res]
@@ -141,11 +140,6 @@ def _get_train_batch(i):
     user_neg_batch, item_neg_batch = [], []
     begin = i * _batch_size
     for idx in range(begin, begin + _batch_size):
-        # u = _user_input[_index[idx]]
-        # i = _item_input_pos[_index[idx]]
-        # user_batch.append(u)
-        # item_batch.append(i)
-        
         L = get_pos_channel(pos_level_dist)
         u, i = get_pos_user_item(L, train_inter_pos_dict)
         user_batch.append(u)
@@ -155,19 +149,13 @@ def _get_train_batch(i):
             user_neg_batch.append(u)
             # negtive k
             
-            # gtItem = _dataset.testRatings[user][1]
-            # j = np.random.randint(_dataset.num_items)
-            # while j in _dataset.trainList[_user_input[_index[idx]]]:
-            #     j = np.random.randint(_dataset.num_items)
-            # item_neg_batch.append(j)
-            
             N = get_neg_channel(user_reps[u])
             j = get_neg_item(user_reps[u], N, _dataset.num_items, u, i,
                              pos_level_dist, train_inter_pos_dict, 
                              args.neg_sampling_modes)
             item_neg_batch.append(j)
-    return np.array(user_batch)[:, None], np.array(item_batch)[:, None], \
-           np.array(user_neg_batch)[:, None], np.array(item_neg_batch)[:, None]
+    return np.asarray(user_batch)[:, None], np.asarray(item_batch)[:, None], \
+           np.asarray(user_neg_batch)[:, None], np.asarray(item_neg_batch)[:, None]
 
 
 # prediction model
@@ -308,12 +296,10 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
             result_save_path = "Result/%s/MF_BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
             ckpt_save_path = "Pretrain/%s/MF_BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
             ckpt_restore_path = 0 if args.restore is None else "Pretrain/%s/MF_BPR/embed_%d/%s/" % (args.dataset, args.embed_size, args.restore)
-        best_result_save_path = "Result/%s/Best/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
         
         if not os.path.exists(ckpt_save_path):
             os.makedirs(ckpt_save_path)
             os.makedirs(result_save_path)
-            os.makedirs(best_result_save_path)
 
             file = open(result_save_path + 'result.csv', 'a+')
             file.write(index)
@@ -377,7 +363,7 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
 
             if model.epochs == epoch_count:
                 print("Epoch %d is the best epoch" % best_res['epoch'])
-                file = open(best_result_save_path + 'result.txt', 'a+')
+                file = open(result_save_path + 'result.txt', 'a+')
                 file.write("Epoch %d is the best epoch\n" % best_res['epoch'])
                 file.write(index_best)
                 for idx, (hr_k, ndcg_k, auc_k) in enumerate(np.swapaxes(best_res['result'], 0, 1)):
@@ -449,7 +435,7 @@ def training_batch(model, sess, batches, adver=False):
             for j in range(0, len(output_neg), model.dns):
                 item_index = np.argmax(output_neg[j: j + model.dns])
                 item_neg_batch.append(item_dns_list[i][j: j + model.dns][item_index][0])
-            item_neg_batch = np.array(item_neg_batch)[:, None]
+            item_neg_batch = np.asarray(item_neg_batch)[:, None]
             # for mini-batch BPR training
             feed_dict = {model.user_input: user_input[i],
                          model.item_input_pos: item_input_pos[i],
@@ -501,15 +487,15 @@ def init_eval_model(model, dataset):
     _dataset = dataset
     _model = model
     
-    feed_dicts = []
-    for user in range(_dataset.num_users):
-        temp = _evaluate_input(user)
-        feed_dicts.append(temp)
+#     feed_dicts = []
+#     for user in range(_dataset.num_users):
+#         temp = _evaluate_input(user)
+#         feed_dicts.append(temp)
         
-    # pool = Pool(cpu_count())
-    # feed_dicts = pool.map(_evaluate_input, range(_dataset.num_users))
-    # pool.close()
-    # pool.join()
+    pool = Pool(cpu_count())
+    feed_dicts = pool.map(_evaluate_input, range(_dataset.num_users))
+    pool.close()
+    pool.join()
 
     print("Load the evaluation model done [%.1f s]" % (time() - begin_time))
     return feed_dicts
@@ -524,7 +510,7 @@ def _evaluate_input(user):
     item_input = list(item_input)
     item_input.append(test_item)
     user_input = np.full(len(item_input), user, dtype='int32')[:, None]
-    item_input = np.array(item_input)[:, None]
+    item_input = np.asarray(item_input)[:, None]
     return user_input, item_input
 
 
@@ -545,7 +531,7 @@ def evaluate(model, sess, dataset, feed_dicts, output_adv):
     res = []
     for user in range(_dataset.num_users):
         res.append(_eval_by_user(user))
-    res = np.array(res)
+    res = np.asarray(res)
     hr, ndcg, auc = (res.mean(axis=0)).tolist()
 
     return hr, ndcg, auc
@@ -592,21 +578,21 @@ if __name__ == '__main__':
     dataset = DataSet(args.path + args.dataset)
     
     args.adver = 0
-    # initialize MF_BPR models
-    MF_BPR = MF(dataset.num_users, dataset.num_items, args)
-    MF_BPR.build_graph()
+    # initialize MC_BPR models
+    MC_BPR = MF(dataset.num_users, dataset.num_items, args)
+    MC_BPR.build_graph()
 
     print("Initialize MC_BPR")
 
     # start training
-    training(MF_BPR, dataset, args, epoch_start=0, epoch_end=args.adv_epoch-1, time_stamp=time_stamp)
+    training(MC_BPR, dataset, args, epoch_start=0, epoch_end=args.adv_epoch-1, time_stamp=time_stamp)
 
     args.adver = 1
-    # instialize AMF model
-    AMF = MF(dataset.num_users, dataset.num_items, args)
-    AMF.build_graph()
+    # instialize MC_APR model
+    MC_APR = MF(dataset.num_users, dataset.num_items, args)
+    MC_APR.build_graph()
 
-    print("Initialize MC_AMF")
+    print("Initialize MC_APR")
 
     # start training
-    training(AMF, dataset, args, epoch_start=args.adv_epoch, epoch_end=args.epochs, time_stamp=time_stamp)
+    training(MC_APR, dataset, args, epoch_start=args.adv_epoch, epoch_end=args.epochs, time_stamp=time_stamp)
