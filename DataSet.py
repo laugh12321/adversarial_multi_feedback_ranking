@@ -8,25 +8,6 @@ import pandas as pd
 from time import time
 import scipy.sparse as sp
 
-def load_ratings(filename):
-    """
-    loads the dataset, ignoring temporal information
-
-    Args:
-        path (str): path pointing to folder with interaction data `ratings.dat`
-
-    Returns:
-        ratings (:obj:`pd.DataFrame`): overall interaction instances (rows)
-            with three columns `[user, item, rating]`
-        m (int): no. of unique users in the dataset
-        n (int): no. of unique items in the dataset
-    """
-    # ratings = pd.read_csv(filename, sep='	', names=['user', 'item', 'rating', 'timestamp'])
-    ratings = pd.read_csv(filename, sep='::', names=['user', 'item', 'rating', 'timestamp'])
-    ratings.drop('timestamp', axis=1, inplace=True)
-    
-    return ratings
-
 
 class DataSet(object):
     def __init__(self, path):
@@ -49,7 +30,6 @@ class DataSet(object):
             n (int): no. of unique items in the dataset
         """
         ratings = pd.read_csv(filename, sep='	', names=['user', 'item', 'rating', 'timestamp'])
-        #ratings = pd.read_csv(filename, sep='::', names=['user', 'item', 'rating', 'timestamp'])
         ratings.drop('timestamp', axis=1, inplace=True)
         
         m = max(ratings['user']); m += 1
