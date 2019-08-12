@@ -65,7 +65,7 @@ def parse_args():
     parser.add_argument('--task', nargs='?', default='',
                         help='Add the task name for launching experiments')
     parser.add_argument('--adv_epoch', type=int, default=0,
-                        help='Add APR in epoch X, when adv_epoch is 0, it\'s equivalent to pure AMF.\n '
+                        help='Add MC-APR in epoch X, when adv_epoch is 0, it\'s equivalent to pure AMF.\n '
                              'And when adv_epoch is larger than epochs, it\'s equivalent to pure MF model. ')
     parser.add_argument('--adv', nargs='?', default='grad',
                         help='Generate the adversarial sample by gradient method or random method')
@@ -289,13 +289,13 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
     with tf.Session() as sess:
         # initialized the save op
         if args.adver:
-            result_save_path = "Result/%s/APR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
-            ckpt_save_path = "Pretrain/%s/APR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
-            ckpt_restore_path = "Pretrain/%s/MF_BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
+            result_save_path = "Result/%s/MC-APR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
+            ckpt_save_path = "Pretrain/%s/MC-APR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
+            ckpt_restore_path = "Pretrain/%s/MC-BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
         else:
-            result_save_path = "Result/%s/MF_BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
-            ckpt_save_path = "Pretrain/%s/MF_BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
-            ckpt_restore_path = 0 if args.restore is None else "Pretrain/%s/MF_BPR/embed_%d/%s/" % (args.dataset, args.embed_size, args.restore)
+            result_save_path = "Result/%s/MC-BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
+            ckpt_save_path = "Pretrain/%s/MC-BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
+            ckpt_restore_path = 0 if args.restore is None else "Pretrain/%s/MC-BPR/embed_%d/%s/" % (args.dataset, args.embed_size, args.restore)
         
         if not os.path.exists(ckpt_save_path):
             os.makedirs(ckpt_save_path)
@@ -582,7 +582,7 @@ if __name__ == '__main__':
     MC_BPR = MF(dataset.num_users, dataset.num_items, args)
     MC_BPR.build_graph()
 
-    print("Initialize MC_BPR")
+    print("Initialize MC-BPR")
 
     # start training
     training(MC_BPR, dataset, args, epoch_start=0, epoch_end=args.adv_epoch-1, time_stamp=time_stamp)
@@ -592,7 +592,7 @@ if __name__ == '__main__':
     MC_APR = MF(dataset.num_users, dataset.num_items, args)
     MC_APR.build_graph()
 
-    print("Initialize MC_APR")
+    print("Initialize MC-APR")
 
     # start training
     training(MC_APR, dataset, args, epoch_start=args.adv_epoch, epoch_end=args.epochs, time_stamp=time_stamp)
