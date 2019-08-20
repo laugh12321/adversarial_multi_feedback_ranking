@@ -29,8 +29,7 @@ class DataSet(object):
             m (int): no. of unique users in the dataset
             n (int): no. of unique items in the dataset
         """
-        ratings = pd.read_csv(filename, sep='	', names=['user', 'item', 'rating', 'timestamp'])
-        ratings.drop('timestamp', axis=1, inplace=True)
+        ratings = pd.read_csv(filename, sep=', ', names=['user', 'item', 'rating'])
         
         m = max(ratings['user']); m += 1
         n = max(ratings['item']); n += 1
