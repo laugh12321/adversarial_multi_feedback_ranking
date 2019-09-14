@@ -1,14 +1,18 @@
 # Multi Channel Adversarial Personalized Ranking
 
-## Environment
 
-Python 3.6.8
+## Introduct
+(AT-MPR) is a new ecommendation framework based on MPR.
 
-TensorFlow 1.13.1
+## Environment Requirement
 
-Numpy 1.14.6
+The code has been tested running under Python 3.6.5. The required packages are as follows:
 
-Pandas 0.24.2
+- TensorFlow 1.13.1
+
+- Numpy 1.14.6
+
+- Pandas 0.24.2
 
 ## Quick Start
 
@@ -17,3 +21,11 @@ This command shows the effect of MPR by adding adversarial perturbation on MPR m
 ```shell
 python main.py --dataset ml-1m --adv_epoch 500 --epochs 1000 --eps 0.5 --reg_adv 1 --ckpt 1 --verbose 10 --beta 1 --sampling 'uniform' 
 ```
+
+Some important arguments:
+
+- `eps`: 用来调成对抗的强度，实验表明在 `0.5` 时效果最佳.
+
+- `beta`: 数据中隐式反馈所占的比例，实现表明 `1` 时效果最佳.
+
+- `sampling`: 提供两种不同的采样方式 `non-uniform`， `uniform` 其中 `uniform` 在 `MovieLens` 中表现最好 
