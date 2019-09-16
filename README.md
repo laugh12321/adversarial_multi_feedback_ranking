@@ -22,9 +22,17 @@ This command shows the effect of MPR by adding adversarial perturbation on MPR m
 python main.py --dataset ml-1m --adv_epoch 500 --epochs 1000 --eps 0.5 --reg_adv 1 --ckpt 1 --verbose 10 --beta 1 --sampling 'uniform' 
 ```
 
+
+
 Some important arguments:
 
-- `eps`: 用来调成对抗的强度，实验表明在 `0.5` 时效果最佳.
+<table><tr>
+<td><img src=https://raw.githubusercontent.com/laugh12321/multi_channel_adversarial_personalized_ranking/master/imgs/%5Beps%5D%20HR.png border=0></td>
+<td><img src=https://raw.githubusercontent.com/laugh12321/multi_channel_adversarial_personalized_ranking/master/imgs/%5Beps%5D%20NDCG.png border=0></td>
+</tr></table>
+
+
+- `eps`: 用来调成对抗的强度，实验表明在 `0.5` 时效果最佳 (上图).
 
 - `beta`: 数据中隐式反馈所占的比例，实现表明 `1` 时效果最佳.
 
