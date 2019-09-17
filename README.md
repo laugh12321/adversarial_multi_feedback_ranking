@@ -37,3 +37,17 @@ Some important arguments:
 - `beta`: 数据中隐式反馈所占的比例，实现表明 `1` 时效果最佳.
 
 - `sampling`: 提供两种不同的采样方式 `non-uniform`， `uniform` 其中 `uniform` 在 `MovieLens` 中表现最好 
+
+<b>More Details:</b>
+
+Use python main.py -h to get more argument setting details.
+
+```
+-h, --help            show this help message and exit
+--path [PATH]         Input data path.
+--dataset [DATASET]   Choose a dataset.
+--verbose VERBOSE     Evaluate per X epochs.
+--epochs EPOCHS       Number of epochs.
+--adv_epochs          The epoch # that starts adversarial training (before that are normal MPR training). 
+......
+```
