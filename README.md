@@ -27,8 +27,8 @@ python AT-MPR.py --dataset ml-1m --adv_epoch 500 --epochs 1000 --eps 0.5 --reg_a
 Some important arguments:
 
 <table><tr>
-<td><img src=https://raw.githubusercontent.com/laugh12321/multi_channel_adversarial_personalized_ranking/master/imgs/%5Beps%5D%20HR.png border=0></td>
-<td><img src=https://raw.githubusercontent.com/laugh12321/multi_channel_adversarial_personalized_ranking/master/imgs/%5Beps%5D%20NDCG.png border=0></td>
+<td><img src=https://laugh12321-1258080753.cos.ap-chengdu.myqcloud.com/AT-MPR/imgs/[eps]%20HR.png border=0></td>
+<td><img src=https://laugh12321-1258080753.cos.ap-chengdu.myqcloud.com/AT-MPR/imgs/[eps]%20NDCG.png border=0></td>
 </tr></table>
 
 
