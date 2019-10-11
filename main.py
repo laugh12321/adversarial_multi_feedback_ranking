@@ -37,7 +37,7 @@ _output = None
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Multi Channel Adversarial Personalized Ranking")
+    parser = argparse.ArgumentParser(description="Multi-feedback Adversarial Personalized Ranking")
     parser.add_argument('--path', nargs='?', default='Data/',
                         help='Input data path.')
     parser.add_argument('--dataset', nargs='?', default='yelp',
@@ -118,10 +118,10 @@ def shuffle(samples, batch_size, dataset, model):
     np.random.shuffle(_index)
     num_batch = len(_user_input) // _batch_size
     
-#     res = []
-#     for i in range(num_batch):
-#         temp = _get_train_batch(i)
-#         res.append(temp)
+    # res = []
+    # for i in range(num_batch):
+    #     temp = _get_train_batch(i)
+    #     res.append(temp)
         
     pool = Pool(cpu_count())
     res = pool.map(_get_train_batch, range(num_batch))
@@ -291,11 +291,11 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
         if args.adver:
             result_save_path = "Result/%s/AT-MPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
             ckpt_save_path = "Pretrain/%s/AT-MPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
-            ckpt_restore_path = "Pretrain/%s/MF-BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
+            ckpt_restore_path = "Pretrain/%s/MPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
         else:
-            result_save_path = "Result/%s/MF-BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
-            ckpt_save_path = "Pretrain/%s/MF-BPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
-            ckpt_restore_path = 0 if args.restore is None else "Pretrain/%s/MF-BPR/embed_%d/%s/" % (args.dataset, args.embed_size, args.restore)
+            result_save_path = "Result/%s/MPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
+            ckpt_save_path = "Pretrain/%s/MPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
+            ckpt_restore_path = 0 if args.restore is None else "Pretrain/%s/MPR/embed_%d/%s/" % (args.dataset, args.embed_size, args.restore)
         
         if not os.path.exists(ckpt_save_path):
             os.makedirs(ckpt_save_path)
@@ -411,10 +411,10 @@ def output_evaluate(model, sess, dataset, train_batches, eval_feed_dicts, epoch_
 def training_batch(model, sess, batches, adver=False):
     user_input, item_input_pos, user_dns_list, item_dns_list = batches
     # dns for every mini-batch
-    # dns = 1, i.e., BPR
+    # dns = 1, i.e., MPR
     if model.dns == 1:
         item_input_neg = item_dns_list
-        # for BPR training
+        # for MPR training
         for i in range(len(user_input)):
             feed_dict = {model.user_input: user_input[i],
                          model.item_input_pos: item_input_pos[i],
@@ -422,7 +422,7 @@ def training_batch(model, sess, batches, adver=False):
             if adver:
                 sess.run([model.update_P, model.update_Q], feed_dict)
             sess.run(model.optimizer, feed_dict)
-    # dns > 1, i.e., BPR-dns
+    # dns > 1, i.e., MPR-dns
     elif model.dns > 1:
         item_input_neg = []
         for i in range(len(user_input)):
@@ -436,7 +436,7 @@ def training_batch(model, sess, batches, adver=False):
                 item_index = np.argmax(output_neg[j: j + model.dns])
                 item_neg_batch.append(item_dns_list[i][j: j + model.dns][item_index][0])
             item_neg_batch = np.asarray(item_neg_batch)[:, None]
-            # for mini-batch BPR training
+            # for mini-batch MPR training
             feed_dict = {model.user_input: user_input[i],
                          model.item_input_pos: item_input_pos[i],
                          model.item_input_neg: item_neg_batch}
@@ -487,10 +487,10 @@ def init_eval_model(model, dataset):
     _dataset = dataset
     _model = model
     
-#     feed_dicts = []
-#     for user in range(_dataset.num_users):
-#         temp = _evaluate_input(user)
-#         feed_dicts.append(temp)
+    # feed_dicts = []
+    # for user in range(_dataset.num_users):
+    #     temp = _evaluate_input(user)
+    #     feed_dicts.append(temp)
         
     pool = Pool(cpu_count())
     feed_dicts = pool.map(_evaluate_input, range(_dataset.num_users))
@@ -578,14 +578,14 @@ if __name__ == '__main__':
     dataset = DataSet(args.path + args.dataset)
     
     args.adver = 0
-    # initialize MF_BPR models
-    MF_BPR = MF(dataset.num_users, dataset.num_items, args)
-    MF_BPR.build_graph()
+    # initialize MPR models
+    MPR = MF(dataset.num_users, dataset.num_items, args)
+    MPR.build_graph()
 
-    print("Initialize MF-BPR")
+    print("Initialize MPR")
 
     # start training
-    training(MF_BPR, dataset, args, epoch_start=0, epoch_end=args.adv_epoch-1, time_stamp=time_stamp)
+    training(MPR, dataset, args, epoch_start=0, epoch_end=args.adv_epoch-1, time_stamp=time_stamp)
 
     args.adver = 1
     # instialize AT_MPR model
