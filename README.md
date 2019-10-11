@@ -1,12 +1,7 @@
 # Multi-feedback Adversarial Personalized Ranking
 
-
-## Introduct
-(AT-MPR) is a new ecommendation framework based on MPR.
-
-![](https://laugh12321-1258080753.cos.ap-chengdu.myqcloud.com/AT-MPR/imgs/[ML-1M]AT-MPR%20VS%20MPR.png)
-![](https://laugh12321-1258080753.cos.ap-chengdu.myqcloud.com/AT-MPR/imgs/[CiaoDVD]AT-MPR%20VS%20MPR.png)
-![](https://laugh12321-1258080753.cos.ap-chengdu.myqcloud.com/AT-MPR/imgs/[Yelp]AT-MPR%20VS%20MPR.png)
+## Introduction
+Multi-feedback Adversarial Personalized Ranking (AT-MPR) model takes MPR integrated with adversarial training in deep learning to learn the relative preference for items.
 
 ## Environment Requirement
 
@@ -18,15 +13,13 @@ The code has been tested running under Python 3.6 The required packages are as f
 
 - Pandas 0.24
 
-## Quick Start
+## Example to Run the Codes
 
 This command shows the effect of MPR by adding adversarial perturbation on MPR model for dataset yelp in epoch 500 (--adv_epoch). The first 500 epochs are MPR, followed by adversarial training MPR.
 
 ```shell
 python AT-MPR.py --dataset ml-1m --adv_epoch 500 --epochs 1000 --eps 0.5 --reg_adv 1 --ckpt 1 --verbose 10 --beta 1 --sampling 'uniform' 
 ```
-
-
 
 Some important arguments:
 
@@ -36,11 +29,11 @@ Some important arguments:
 </tr></table>
 
 
-- `eps`: 用来调成对抗的强度，实验表明在 `0.5` 时效果最佳 (上图).
+- `eps`: Used to adjust the intensity of the confrontation, experiments show that the effect is best at `0.5` (see figure, above).
 
-- `beta`: 数据中隐式反馈所占的比例，实现表明 `1` 时效果最佳.
+- `beta`: The proportion of implicit feedback in data is the best when `1` is realized.
 
-- `sampling`: 提供两种不同的采样方式 `non-uniform`， `uniform` 其中 `uniform` 在 `MovieLens` 中表现最好 
+- `sampling`: Provide two different sampling methods `non-uniform` , `uniform` among which `uniform` performs best in `MovieLens`. 
 
 <b>More Details:</b>
 
