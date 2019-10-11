@@ -1,4 +1,4 @@
-# Multi Channel Adversarial Personalized Ranking
+# Multi-feedback Adversarial Personalized Ranking
 
 
 ## Introduct
@@ -19,7 +19,7 @@ The code has been tested running under Python 3.6.5. The required packages are a
 This command shows the effect of MPR by adding adversarial perturbation on MPR model for dataset yelp in epoch 500 (--adv_epoch). The first 500 epochs are MPR, followed by adversarial training MPR.
 
 ```shell
-python main.py --dataset ml-1m --adv_epoch 500 --epochs 1000 --eps 0.5 --reg_adv 1 --ckpt 1 --verbose 10 --beta 1 --sampling 'uniform' 
+python AT-MPR.py --dataset ml-1m --adv_epoch 500 --epochs 1000 --eps 0.5 --reg_adv 1 --ckpt 1 --verbose 10 --beta 1 --sampling 'uniform' 
 ```
 
 
