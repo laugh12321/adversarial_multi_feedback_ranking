@@ -10,13 +10,13 @@
 
 ## Environment Requirement
 
-The code has been tested running under Python 3.6.5. The required packages are as follows:
+The code has been tested running under Python 3.6 The required packages are as follows:
 
-- TensorFlow 1.13.1
+- TensorFlow 1.13
 
-- Numpy 1.14.6
+- Numpy 1.14
 
-- Pandas 0.24.2
+- Pandas 0.24
 
 ## Quick Start
 
