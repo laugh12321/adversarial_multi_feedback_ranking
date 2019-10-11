@@ -118,15 +118,15 @@ def shuffle(samples, batch_size, dataset, model):
     np.random.shuffle(_index)
     num_batch = len(_user_input) // _batch_size
     
-    res = []
-    for i in range(num_batch):
-        temp = _get_train_batch(i)
-        res.append(temp)
+    # res = []
+    # for i in range(num_batch):
+    #     temp = _get_train_batch(i)
+    #     res.append(temp)
         
-    # pool = Pool(cpu_count())
-    # res = pool.map(_get_train_batch, range(num_batch))
-    # pool.close()
-    # pool.join()
+    pool = Pool(cpu_count())
+    res = pool.map(_get_train_batch, range(num_batch))
+    pool.close()
+    pool.join()
     
     user_list = [r[0] for r in res]
     item_pos_list = [r[1] for r in res]
@@ -280,29 +280,19 @@ class MF:
 
 # training
 def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver is an object to save pq
-    global result_save_path
-
-    index_best = 'Epoch, K, HR, NDCG, AUC\n'
-    index = 'Epochs, Time, HR, NDCG, ACC, ACC_adv, Eval_time, P, Q\n'
 
     with tf.Session() as sess:
         # initialized the save op
         if args.adver:
-            result_save_path = "../Result/%s/AT-MPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
             ckpt_save_path = "../Pretrain/%s/AT-MPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
             ckpt_restore_path = "../Pretrain/%s/MPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
         else:
-            result_save_path = "../Result/%s/MPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
             ckpt_save_path = "../Pretrain/%s/MPR/embed_%d/%s/" % (args.dataset, args.embed_size, time_stamp)
             ckpt_restore_path = 0 if args.restore is None else "../Pretrain/%s/MPR/embed_%d/%s/" % (args.dataset, args.embed_size, args.restore)
         
         if not os.path.exists(ckpt_save_path):
             os.makedirs(ckpt_save_path)
-            os.makedirs(result_save_path)
 
-            file = open(result_save_path + 'result.csv', 'a+')
-            file.write(index)
-            file.close()
         if ckpt_restore_path and not os.path.exists(ckpt_restore_path):
             os.makedirs(ckpt_restore_path)
 
@@ -362,14 +352,6 @@ def training(model, dataset, args, epoch_start, epoch_end, time_stamp):  # saver
 
             if model.epochs == epoch_count:
                 print("Epoch %d is the best epoch" % best_res['epoch'])
-                file = open(result_save_path + 'result.txt', 'a+')
-                file.write("Epoch %d is the best epoch\n" % best_res['epoch'])
-                file.write(index_best)
-                for idx, (hr_k, ndcg_k, auc_k) in enumerate(np.swapaxes(best_res['result'], 0, 1)):
-                    res = "K = %d: HR = %.4f, NDCG = %.4f AUC = %.4f" % (idx + 1, hr_k, ndcg_k, auc_k)
-                    file.write("%d, %.4f, %.4f, %.4f\n" % (idx + 1, hr_k, ndcg_k, auc_k))
-                    print(res)
-                file.close()
 
             # save the embedding weights
             if args.ckpt > 0 and epoch_count % args.ckpt == 0:
@@ -395,11 +377,6 @@ def output_evaluate(model, sess, dataset, train_batches, eval_feed_dicts, epoch_
     res = "Epoch %d [%.1fs + %.1fs]: HR = %.4f, NDCG = %.4f ACC = %.4f ACC_adv = %.4f [%.1fs], |P|=%.2f, |Q|=%.2f" % \
           (epoch_count, batch_time, train_time, hr, ndcg, prev_acc,
            post_acc, eval_time, np.linalg.norm(embedding_P), np.linalg.norm(embedding_Q))
-    file = open(result_save_path + 'result.csv', 'a+')
-    file.write("%d, %.1fs, %.4f, %.4f, %.4f, %.4f, %.1fs, %.2f, %.2f\n" % \
-          (epoch_count, batch_time+train_time, hr, ndcg, prev_acc,
-           post_acc, eval_time, np.linalg.norm(embedding_P), np.linalg.norm(embedding_Q)))
-    file.close()
     print(res)
 
     return post_acc, ndcg, result
@@ -486,15 +463,15 @@ def init_eval_model(model, dataset):
     _dataset = dataset
     _model = model
     
-    feed_dicts = []
-    for user in range(_dataset.num_users):
-        temp = _evaluate_input(user)
-        feed_dicts.append(temp)
+    # feed_dicts = []
+    # for user in range(_dataset.num_users):
+    #     temp = _evaluate_input(user)
+    #     feed_dicts.append(temp)
         
-    # pool = Pool(cpu_count())
-    # feed_dicts = pool.map(_evaluate_input, range(_dataset.num_users))
-    # pool.close()
-    # pool.join()
+    pool = Pool(cpu_count())
+    feed_dicts = pool.map(_evaluate_input, range(_dataset.num_users))
+    pool.close()
+    pool.join()
 
     print("Load the evaluation model done [%.1f s]" % (time() - begin_time))
     return feed_dicts
