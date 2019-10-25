@@ -48,3 +48,20 @@ Use python main.py -h to get more argument setting details.
 --adv_epochs          The epoch # that starts adversarial training (before that are normal MPR training). 
 ......
 ```
+
+## Dataset
+
+We provide three processed datasets: Yelp(yelp), MovieLens 1 Million (ml-1m) and Ciao (CiaoDVD) in Data
+
+<b>train.rating:</b>
+
+- Train file.
+- Each Line is a training instance: userID,  itemID, rating
+
+<b>test.rating:</b>
+
+- Test file.
+- Each Line is a testing instance: userID,  itemID, rating
+
+
+Update: Oct 25, 2019
