@@ -1,5 +1,10 @@
-# Multi-feedback Adversarial Personalized Ranking
+# Multi-feedback Pairwise Ranking via Adversarial Training for Recommender
 
+This is our official implementation for the paper:
+
+>WANG Jianfang, FU Zhiyuan, NIU Mingxin, ZHANG Pengbo, ZHANG Qiuling. <b>Multi-feedback Pairwise Ranking via Adversarial Training for Recommender[J]</b>. Chinese Journal of Electronics, 2020, 29(4): 615-622.
+
+If you use the codes, please cite our paper . Thanks!
 ## Introduction
 Multi-feedback Adversarial Personalized Ranking (AT-MPR) model takes MPR integrated with adversarial training in deep learning to learn the relative preference for items.
 
@@ -18,7 +23,7 @@ The code has been tested running under Python 3.6 The required packages are as f
 This command shows the effect of MPR by adding adversarial perturbation on MPR model for dataset ml-1m in epoch 500 (--adv_epoch). The first 500 epochs are MPR, followed by adversarial training MPR.
 
 ```shell
-python AT-MPR/AT-MPR.py --dataset ml-1m --adv_epoch 500 --epochs 1000 --eps 0.5 --reg_adv 1 --ckpt 1 --verbose 10 --beta 1 --sampling 'uniform' 
+python AT-MPR.py --dataset ml-1m --adv_epoch 500 --epochs 1000 --eps 0.5 --reg_adv 1 --ckpt 1 --verbose 10 --beta 1 --sampling 'uniform' 
 ```
 
 Some important arguments:
