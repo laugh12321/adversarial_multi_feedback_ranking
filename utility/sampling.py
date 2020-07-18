@@ -1,7 +1,7 @@
 '''
 Created on July 18, 2019
 Sampling datasets. 
-@author: zhangpeng bo (zhang26162@gmail.com)
+@author: Zhang Pengbo (zhang26162@gmail.com)
 '''
 import numpy as np
 

@@ -1,7 +1,7 @@
 '''
 Created on July 18, 2019
-Multi-feedback Adversarial Personalized Ranking
-@author: zhangpeng bo (zhang26162@gmail.com)
+Multi-feedback Pairwise Ranking via Adversarial Training for Recommender
+@author: Zhang Pengbo (zhang26162@gmail.com)
 '''
 from __future__ import absolute_import
 from __future__ import division
@@ -37,8 +37,8 @@ _output = None
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Multi-feedback Adversarial Personalized Ranking")
-    parser.add_argument('--path', nargs='?', default='../Data/',
+    parser = argparse.ArgumentParser(description="Multi-feedback Pairwise Ranking via Adversarial Training for Recommender")
+    parser.add_argument('--path', nargs='?', default='Data/',
                         help='Input data path.')
     parser.add_argument('--dataset', nargs='?', default='yelp',
                         help='Choose a dataset.')

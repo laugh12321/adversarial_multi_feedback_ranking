@@ -1,7 +1,7 @@
 '''
 Created on July 18, 2019
 Utils. 
-@author: zhangpeng bo (zhang26162@gmail.com)
+@author: Zhang Pengbo (zhang26162@gmail.com)
 '''
 import numpy as np
 from collections import OrderedDict 
