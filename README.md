@@ -5,8 +5,10 @@ This is our official implementation for the paper:
 >WANG Jianfang, FU Zhiyuan, NIU Mingxin, ZHANG Pengbo, ZHANG Qiuling. <b>Multi-feedback Pairwise Ranking via Adversarial Training for Recommender[J]</b>. Chinese Journal of Electronics, 2020, 29(4): 615-622.
 
 If you use the codes, please cite our paper . Thanks!
+
 ## Introduction
-Multi-feedback Adversarial Personalized Ranking (AT-MPR) model takes MPR integrated with adversarial training in deep learning to learn the relative preference for items.
+
+Multi-feedback pairwise ranking method via Adversarial training (AT-MPR) for recommender to enhance the robustness and overall performance in the event of rating pollution.
 
 ## Environment Requirement
 
@@ -69,4 +71,4 @@ We provide three processed datasets: Yelp(yelp), MovieLens 1 Million (ml-1m) and
 - Each Line is a testing instance: userID,  itemID, rating
 
 
-Update: Oct 25, 2019
+Update: Jul 18, 2020
