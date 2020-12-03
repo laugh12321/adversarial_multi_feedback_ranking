@@ -2,7 +2,7 @@
 
 This is our official implementation for the paper:
 
->WANG Jianfang, FU Zhiyuan, NIU Mingxin, ZHANG Pengbo, ZHANG Qiuling. <b>Multi-feedback Pairwise Ranking via Adversarial Training for Recommender[J]</b>. Chinese Journal of Electronics, 2020, 29(4): 615-622.
+>[WANG Jianfang, FU Zhiyuan, NIU Mingxin, ZHANG Pengbo, ZHANG Qiuling. <b>Multi-feedback Pairwise Ranking via Adversarial Training for Recommender[J]</b>. Chinese Journal of Electronics, 2020, 29(4): 615-622.](http://www.ejournal.org.cn/Jweb_cje/EN/10.1049/cje.2020.05.004)
 
 If you use the codes, please cite our paper . Thanks!
 
