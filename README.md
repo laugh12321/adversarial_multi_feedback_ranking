@@ -2,7 +2,7 @@
 
 This is our official implementation for the paper:
 
->[WANG Jianfang, FU Zhiyuan, NIU Mingxin, ZHANG Pengbo, ZHANG Qiuling. <b>Multi-feedback Pairwise Ranking via Adversarial Training for Recommender[J]</b>. Chinese Journal of Electronics, 2020, 29(4): 615-622.](http://www.ejournal.org.cn/Jweb_cje/EN/10.1049/cje.2020.05.004)
+>[WANG Jianfang, FU Zhiyuan, NIU Mingxin, ZHANG Pengbo, ZHANG Qiuling. Multi-feedback Pairwise Ranking via Adversarial Training for Recommender[J]. Chinese Journal of Electronics, 2020, 29(4): 615-622. doi: 10.1049/cje.2020.05.004](http://cje.ejournal.org.cn/en/article/doi/10.1049/cje.2020.05.004)
 
 If you use the codes, please cite our paper . Thanks!
 
@@ -71,4 +71,4 @@ We provide three processed datasets: Yelp(yelp), MovieLens 1 Million (ml-1m) and
 - Each Line is a testing instance: userID,  itemID, rating
 
 
-Update: Jul 18, 2020
+Update: Jun 4, 2021
